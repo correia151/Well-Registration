@@ -1,0 +1,59 @@
+AgOptics — GSA Outreach Email Drafts
+=====================================
+Purpose: confirm that AgOptics can submit well registrations on behalf of growers
+(batch/consultant submission) and ask about accepted formats & authorization.
+Edit the bracketed bits before sending.
+
+
+-------------------------------------------------------------------------------
+TO: info@greaterkaweahgsa.org
+SUBJECT: Consultant-assisted well registration — batch submission & landowner authorization
+-------------------------------------------------------------------------------
+
+Hello,
+
+I'm with AgOptics LLC, an agricultural consulting firm working with growers in the
+Greater Kaweah GSA on the well registration ahead of the July 1, 2026 deadline. We're
+collecting well information for our clients and would like to file on their behalf.
+
+A few questions so we submit it the way you prefer:
+
+1. Do you accept consultant/agent submissions on behalf of a landowner, and if so, is
+   there a landowner authorization form or language you'd like us to include?
+2. For multiple wells across several clients, can registrations be submitted in batch
+   (e.g., a CSV or spreadsheet), or does each well need to be entered individually in
+   the ArcGIS Experience portal?
+3. Which fields are required per well (e.g., APN, use, status, depth, State Well No.,
+   coordinates)? We capture APN, use, status, and WGS84 lat/long today.
+
+We can provide a signed landowner authorization with each submission. Happy to follow
+whatever process keeps things clean on your end.
+
+Thank you,
+[Name]
+AgOptics LLC · Admin@agoptics.ai · agoptics.ai
+
+
+-------------------------------------------------------------------------------
+TO: jmf@tulareid.org  (cc: midkaweah@gmail.com)
+SUBJECT: Well registration KMZ submissions on behalf of growers
+-------------------------------------------------------------------------------
+
+Hello,
+
+I'm with AgOptics LLC, working with Mid-Kaweah GSA growers on well registration. We
+prepare a KMZ for each client containing their parcels and well locations (wells tagged
+to APN, with use and status).
+
+Two quick questions:
+
+1. Can we submit these KMZs on behalf of our clients, and is there an authorization
+   form or language you'd like included?
+2. Is the KMZ (parcel polygons + well points with APN/use/status attributes) the format
+   you prefer, or is there a template/field set you'd rather we match?
+
+Glad to adjust to your preferred process.
+
+Thank you,
+[Name]
+AgOptics LLC · Admin@agoptics.ai · agoptics.ai

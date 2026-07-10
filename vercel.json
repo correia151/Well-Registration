@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "app",
+  "rewrites": [
+    { "source": "/.netlify/functions/parcels", "destination": "/api/parcels" }
+  ]
+}

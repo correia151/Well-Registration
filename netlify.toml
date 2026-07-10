@@ -1,0 +1,8 @@
+# Netlify configuration for Git-based continuous deploys.
+# Publishes the app/ folder as the site root; no build step (static HTML + functions).
+[build]
+  publish = "app"
+
+[functions]
+  directory = "app/netlify/functions"
+  node_bundler = "esbuild"
