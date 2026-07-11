@@ -422,7 +422,8 @@ async function emailAgOptics(){
     }
     const un=wells.filter(w=>!/mid|greater/i.test(w.gsa||''));
     if(un.length)fd.append('unassigned_csv',new Blob([buildCSV(un)],{type:'text/csv'}),'AgOptics_'+safeName()+'_Unassigned.csv');
-    const r=await fetch('/',{method:'POST',body:fd});
+    let r=await fetch('/.netlify/functions/submit',{method:'POST',body:fd});
+    if(!r.ok)r=await fetch('/',{method:'POST',body:fd});
     if(!r.ok)throw new Error('HTTP '+r.status);
     btn.textContent='Sent ✓';
     msg.style.display='block';

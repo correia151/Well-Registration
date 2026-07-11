@@ -73,10 +73,14 @@ CLI alternative: `npm i -g netlify-cli` then `cd app && netlify deploy --prod`.
    button is also offered, and if the form submission fails the app falls back
    to downloading the CSV and opening a pre-filled email.
 
-Submissions arrive under **Forms → well-registration** in the Netlify dashboard
-(uploaded files are stored there as download links); an email notification to
-contact@agoptics.ai is configured in Netlify under Project configuration →
-Notifications → Form submission notifications.
+Submissions are emailed directly to contact@agoptics.ai with the CSV/KMZ files
+attached, via `app/netlify/functions/submit.mjs` and Resend (requires the
+`RESEND_API_KEY` environment variable in Netlify — see the comments in that
+file). This bypasses Netlify Forms' Akismet spam filter, which was silently
+diverting real grower submissions. If the function is unavailable, the app
+falls back to submitting to Netlify Forms (data lands under **Forms →
+well-registration** in the Netlify dashboard — check the **Spam** tab there,
+since Akismet flags most of these submissions).
 
 ---
 
