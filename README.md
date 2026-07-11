@@ -1,7 +1,7 @@
 # AgOptics — Well Registration Toolkit
 
 Everything needed to run the Kaweah Subbasin well-registration service for growers.
-Built for AgOptics LLC (agoptics.ai · Admin@agoptics.ai).
+Built for AgOptics LLC (agoptics.ai · contact@agoptics.ai).
 
 ---
 
@@ -66,8 +66,17 @@ CLI alternative: `npm i -g netlify-cli` then `cd app && netlify deploy --prod`.
    select it (you can also select from the list if a rural boundary doesn't draw).
 3. **Mark wells** — tap each wellhead on the satellite map. Each pin is auto-tagged to
    the parcel's APN and GSA (point-in-polygon).
-4. **Export** — get the Mid-Kaweah KMZ and the Greater Kaweah CSV, then submit each to
-   the right GSA. A summary email to Admin@agoptics.ai is also offered.
+4. **Send** — tap "Email summary to AgOptics": the app submits the well data to
+   AgOptics via Netlify Forms — a CSV and a KMZ per subbasin (Greater Kaweah /
+   Mid-Kaweah, plus an Unassigned CSV if any well didn't auto-tag). AgOptics
+   (contact@agoptics.ai) then submits to each GSA. A "Download all wells (CSV)"
+   button is also offered, and if the form submission fails the app falls back
+   to downloading the CSV and opening a pre-filled email.
+
+Submissions arrive under **Forms → well-registration** in the Netlify dashboard
+(uploaded files are stored there as download links); an email notification to
+contact@agoptics.ai is configured in Netlify under Project configuration →
+Notifications → Form submission notifications.
 
 ---
 
@@ -91,8 +100,6 @@ You want `matchedFeatures: 1`. The `attempts` list shows which field matched.
 
 - Postcard: fill in the **street address** and **postage permit number** before printing.
 - Capture **depth** and **State Well No.** per well if a GSA requires them (not collected yet).
-- Optional: auto-submission (a Netlify form/function) so exports land in your inbox or a
-  sheet instead of being emailed as attachments.
 - Make the GK form template-driven so it auto-generates per customer from their CSV.
 - Confirm with Greater Kaweah whether they accept the printable form as a direct
   submission in addition to portal entry.

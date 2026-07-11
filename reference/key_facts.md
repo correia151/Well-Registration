@@ -14,7 +14,7 @@
 - East Kaweah GSA — groundwater@ekgsa.org · (559) 697-6095
 
 ## AgOptics
-- Web: agoptics.ai · Email: Admin@agoptics.ai
+- Web: agoptics.ai · Email: contact@agoptics.ai
 - Product: WaterOptics (decision support; not a system of record)
 
 ## Data sources

@@ -125,12 +125,11 @@
     <h2>4 · Send it in</h2>
     <div id="counts" class="sub"></div>
     <div class="stack">
-      <button class="btn blue" onclick="downloadKMZ('Mid')">Download KMZ — Mid-Kaweah wells</button>
-      <button class="btn navy" onclick="downloadCSV('Greater')">Download data file — Greater Kaweah wells</button>
-      <button class="btn ghost" onclick="downloadCSV('all')">Download all wells (CSV)</button>
-      <button class="btn ghost" onclick="emailAgOptics()">Email summary to AgOptics</button>
+      <button class="btn navy" onclick="downloadCSV('all')">Download all wells (CSV)</button>
+      <button class="btn primary" id="emailbtn" onclick="emailAgOptics()">Email summary to AgOptics</button>
     </div>
-    <div class="note">Email files to <b>Admin@agoptics.ai</b> — Mid-Kaweah KMZ is submitted as-is; Greater Kaweah wells are entered in the GSA portal for you before July 1, 2026.</div>
+    <div id="sendmsg" class="note" style="display:none"></div>
+    <div class="note">"Email summary" sends your wells (CSV + map file, split by GSA) straight to <b>contact@agoptics.ai</b> — AgOptics submits them to each GSA for you before July 1, 2026.</div>
   </div>
 
   <div class="priv">Runs entirely in your browser. Parcel shapes are read from the public Tulare County map; nothing you enter is uploaded or stored until you send it.<br>AgOptics LLC · Data. Insight. Better Decisions.</div>
@@ -157,6 +156,20 @@
   <label>Notes</label><textarea id="wnotes" rows="2" placeholder="optional"></textarea>
   <div class="actions"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="saveWell()">Save well</button></div>
 </div></div>
+
+<!-- Hidden template so Netlify Forms registers the "Email summary to AgOptics" submission at deploy time -->
+<form name="well-registration" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field">
+  <input type="text" name="landowner">
+  <input type="text" name="contact">
+  <input type="text" name="gsa">
+  <textarea name="summary"></textarea>
+  <input type="file" name="greater_csv">
+  <input type="file" name="greater_kmz">
+  <input type="file" name="mid_csv">
+  <input type="file" name="mid_kmz">
+  <input type="file" name="unassigned_csv">
+</form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -367,22 +380,60 @@ function buildKML(ws,ps){
   return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(g.name||'Well registration')+'</name>'+body+'</Document></kml>';
 }
 function dl(blob,fn){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
-function downloadKMZ(f){
-  if(!nameOk())return;
-  const ws=filterWells(f); if(!ws.length){alert('No wells tagged to '+f+'-Kaweah yet.');return;}
-  const ps=parcels.filter(p=>p.features&&(f==='all'||new RegExp(f,'i').test(p.gsa)));
-  const zip=new JSZip();zip.file('doc.kml',buildKML(ws,ps));
-  zip.generateAsync({type:'blob',mimeType:'application/vnd.google-earth.kmz'}).then(b=>dl(b,'AgOptics_'+safeName()+'_'+f+'Kaweah.kmz'));
+function buildCSV(ws){
+  const g=grower();const head=['Landowner','Contact','GSA','APN','Well label','Use','Status','Depth_ft','Well/Report No','Latitude','Longitude','Notes'];
+  const rows=[head.join(',')];
+  ws.forEach(w=>{rows.push([g.name,g.contact,w.gsa,w.apn,w.label,w.use,w.status,w.depth,w.no,w.lat.toFixed(6),w.lng.toFixed(6),w.notes].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','));});
+  return rows.join('\n');
 }
 function downloadCSV(f){
   if(!nameOk())return;
   const ws=filterWells(f); if(!ws.length){alert('No wells'+(f==='all'?'':' tagged to '+f+'-Kaweah')+' yet.');return;}
-  const g=grower();const head=['Landowner','Contact','GSA','APN','Well label','Use','Status','Depth_ft','Well/Report No','Latitude','Longitude','Notes'];
-  const rows=[head.join(',')];
-  ws.forEach(w=>{rows.push([g.name,g.contact,w.gsa,w.apn,w.label,w.use,w.status,w.depth,w.no,w.lat.toFixed(6),w.lng.toFixed(6),w.notes].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','));});
-  dl(new Blob([rows.join('\n')],{type:'text/csv'}),'AgOptics_'+safeName()+'_'+f+'.csv');
+  dl(new Blob([buildCSV(ws)],{type:'text/csv'}),'AgOptics_'+safeName()+'_'+(f==='all'?'AllWells':f)+'.csv');
 }
-function emailAgOptics(){const g=grower();let b='Landowner: '+g.name+'%0AContact: '+g.contact+'%0AGSA: '+g.gsa+'%0A%0AWells:%0A';wells.forEach((w,i)=>{b+=(i+1)+'. '+w.label+' — '+w.use+', '+w.status+(w.apn?(', APN '+w.apn):'')+(w.gsa?(', '+w.gsa.replace(' GSA','')):'')+' @ '+w.lat.toFixed(6)+','+w.lng.toFixed(6)+'%0A';});b+='%0A(Remember to attach the downloaded KMZ / data file.)';window.location.href='mailto:Admin@agoptics.ai?subject='+encodeURIComponent('Well registration — '+(g.name||''))+'&body='+b;}
+function kmzBlob(f){
+  const ws=filterWells(f);
+  const ps=parcels.filter(p=>p.features&&(f==='all'||new RegExp(f,'i').test(p.gsa)));
+  const zip=new JSZip();zip.file('doc.kml',buildKML(ws,ps));
+  return zip.generateAsync({type:'blob',mimeType:'application/vnd.google-earth.kmz'});
+}
+function summaryText(){
+  const g=grower();
+  let t='Landowner: '+g.name+'\nContact: '+g.contact+'\nGSA (from dashboard): '+g.gsa+'\n\nWells ('+wells.length+'):\n';
+  wells.forEach((w,i)=>{t+=(i+1)+'. '+w.label+' — '+w.use+', '+w.status+(w.apn?(', APN '+w.apn):'')+(w.gsa?(', '+w.gsa.replace(' GSA','')):'')+' @ '+w.lat.toFixed(6)+','+w.lng.toFixed(6)+'\n';});
+  return t;
+}
+async function emailAgOptics(){
+  if(!nameOk())return;
+  if(!wells.length){alert('No wells yet. Tap the map on each wellhead first.');return;}
+  const btn=document.getElementById('emailbtn'),msg=document.getElementById('sendmsg'),orig=btn.textContent;
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const g=grower(),fd=new FormData();
+    fd.append('form-name','well-registration');
+    fd.append('landowner',g.name);fd.append('contact',g.contact);fd.append('gsa',g.gsa);
+    fd.append('summary',summaryText());
+    for(const[f,label]of[['Greater','GreaterKaweah'],['Mid','MidKaweah']]){
+      const ws=filterWells(f);if(!ws.length)continue;
+      fd.append(f.toLowerCase()+'_csv',new Blob([buildCSV(ws)],{type:'text/csv'}),'AgOptics_'+safeName()+'_'+label+'.csv');
+      fd.append(f.toLowerCase()+'_kmz',await kmzBlob(f),'AgOptics_'+safeName()+'_'+label+'.kmz');
+    }
+    const un=wells.filter(w=>!/mid|greater/i.test(w.gsa||''));
+    if(un.length)fd.append('unassigned_csv',new Blob([buildCSV(un)],{type:'text/csv'}),'AgOptics_'+safeName()+'_Unassigned.csv');
+    const r=await fetch('/',{method:'POST',body:fd});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    btn.textContent='Sent ✓';
+    msg.style.display='block';
+    msg.innerHTML='<b>Sent!</b> Your well data went to AgOptics (contact@agoptics.ai). We’ll take it from here.';
+    setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},5000);
+  }catch(e){
+    btn.textContent=orig;btn.disabled=false;
+    alert('Automatic send didn’t go through. Your wells file will download instead — please attach it to the email that opens.');
+    downloadCSV('all');
+    const g=grower();
+    window.location.href='mailto:contact@agoptics.ai?subject='+encodeURIComponent('Well registration — '+(g.name||''))+'&body='+encodeURIComponent(summaryText()+'\n(Remember to attach the downloaded wells file.)');
+  }
+}
 function nameOk(){if(!document.getElementById('gname').value.trim()){alert('Please enter the landowner name.');return false;}return true;}
 renderParcels();renderWells();
 </script>
