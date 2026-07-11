@@ -162,6 +162,7 @@
   <input name="bot-field">
   <input type="text" name="landowner">
   <input type="text" name="contact">
+  <input type="email" name="email">
   <input type="text" name="gsa">
   <textarea name="summary"></textarea>
   <input type="file" name="greater_csv">
@@ -412,6 +413,7 @@ async function emailAgOptics(){
     const g=grower(),fd=new FormData();
     fd.append('form-name','well-registration');
     fd.append('landowner',g.name);fd.append('contact',g.contact);fd.append('gsa',g.gsa);
+    if(/@/.test(g.contact))fd.append('email',g.contact.trim());
     fd.append('summary',summaryText());
     for(const[f,label]of[['Greater','GreaterKaweah'],['Mid','MidKaweah']]){
       const ws=filterWells(f);if(!ws.length)continue;
