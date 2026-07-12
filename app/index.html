@@ -165,6 +165,7 @@
   <input type="email" name="email">
   <input type="text" name="gsa">
   <textarea name="summary"></textarea>
+  <textarea name="wells_json"></textarea>
   <input type="file" name="greater_csv">
   <input type="file" name="greater_kmz">
   <input type="file" name="mid_csv">
@@ -415,6 +416,7 @@ async function emailAgOptics(){
     fd.append('landowner',g.name);fd.append('contact',g.contact);fd.append('gsa',g.gsa);
     if(/@/.test(g.contact))fd.append('email',g.contact.trim());
     fd.append('summary',summaryText());
+    fd.append('wells_json',JSON.stringify(wells.map(w=>({label:w.label,use:w.use,status:w.status,apn:w.apn,gsa:w.gsa,depth:w.depth,no:w.no,lat:w.lat,lng:w.lng,notes:w.notes}))));
     for(const[f,label]of[['Greater','GreaterKaweah'],['Mid','MidKaweah']]){
       const ws=filterWells(f);if(!ws.length)continue;
       fd.append(f.toLowerCase()+'_csv',new Blob([buildCSV(ws)],{type:'text/csv'}),'AgOptics_'+safeName()+'_'+label+'.csv');
