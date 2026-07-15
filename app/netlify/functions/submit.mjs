@@ -23,11 +23,13 @@
 // Until RESEND_API_KEY is set this returns 503 and the app falls back to
 // the Netlify Forms submission (data still lands in the Forms dashboard).
 
+import { verifyToken } from '../../../lib/portal-core.mjs';
+
 const FILE_FIELDS = ['greater_csv', 'greater_kmz', 'mid_csv', 'mid_kmz', 'unassigned_csv'];
 
 const num = x => { const n = parseFloat(x); return isFinite(n) ? n : null; };
 
-async function saveToSupabase({ landowner, contact, email, gsa, summary, wellsJson }) {
+async function saveToSupabase({ landowner, contact, email, gsa, summary, wellsJson, growerId }) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return { saved: false, reason: 'not configured' };
   const headers = { apikey: key, authorization: 'Bearer ' + key, 'content-type': 'application/json', prefer: 'return=representation' };
@@ -37,7 +39,7 @@ async function saveToSupabase({ landowner, contact, email, gsa, summary, wellsJs
     if (!r.ok) throw new Error(path + ': ' + (j && (j.message || j.error) || r.status));
     return j;
   };
-  const reg = await post('/rest/v1/registrations', { landowner, contact, email: email || null, gsa, summary });
+  const reg = await post('/rest/v1/registrations', { landowner, contact, email: email || null, gsa, summary, grower_id: growerId || null });
   const regId = reg[0].id;
   let wells = [];
   try { wells = JSON.parse(wellsJson || '[]'); } catch (e) { /* malformed wells_json — registration row still saved */ }
@@ -64,9 +66,11 @@ export default async (req) => {
     const v = n => String(fd.get(n) || '').slice(0, 10000);
     const landowner = v('landowner'), contact = v('contact'), email = v('email'), gsa = v('gsa'), summary = v('summary');
     if (!landowner) return new Response(JSON.stringify({ error: 'landowner required' }), { status: 400, headers });
+    // If the grower is signed in to the portal, link this submission to their account.
+    const auth = verifyToken(String(fd.get('portal_token') || ''));
     let db = { saved: false };
     try {
-      db = await saveToSupabase({ landowner, contact, email, gsa, summary, wellsJson: String(fd.get('wells_json') || '').slice(0, 500000) });
+      db = await saveToSupabase({ landowner, contact, email, gsa, summary, growerId: auth && auth.growerId, wellsJson: String(fd.get('wells_json') || '').slice(0, 500000) });
     } catch (e) {
       db = { saved: false, reason: String(e && e.message || e) };
     }

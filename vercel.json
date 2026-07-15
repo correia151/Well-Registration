@@ -2,6 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "app",
   "rewrites": [
-    { "source": "/.netlify/functions/parcels", "destination": "/api/parcels" }
+    { "source": "/.netlify/functions/parcels", "destination": "/api/parcels" },
+    { "source": "/.netlify/functions/portal", "destination": "/api/portal" },
+    { "source": "/.netlify/functions/submit", "destination": "/api/submit" }
   ]
 }
