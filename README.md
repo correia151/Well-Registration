@@ -17,16 +17,33 @@ the right file for each GSA:
 
 The app keys off APN, so it works for any customer from their Explore-Usage export.
 
+**Grower portal (pilot study):** growers can now sign in with just their email —
+the app emails them a 6-digit code, no password — and everything they do (their
+info, parcel list, and every well they mark) saves automatically to the Supabase
+database. They can close the app and come back any time, on any device, to add
+more wells or make changes. Everything also stays cached in the browser, so even
+without signing in a grower's work survives a page reload on the same device.
+See "The grower portal" below for the one-time setup.
+
 ---
 
 ## Folder contents
 
 ```
 app/                         The deployable website (this is the program)
-  index.html                 The grower-facing app (runs entirely in the browser)
+  index.html                 The grower-facing app (portal sign-in, map, autosave)
   netlify/functions/
     parcels.mjs              Server-side parcel-boundary lookup (CORS-safe, countywide)
+    portal.mjs               Grower portal API (sign-in codes, saved parcels/wells)
+    submit.mjs               "Email summary to AgOptics" submission (Resend + archive)
   netlify.toml               Netlify functions config
+lib/
+  parcels-lookup.mjs         Shared parcel-lookup core (used by both platforms)
+  portal-core.mjs            Shared grower-portal core: auth + database access
+api/
+  parcels.mjs / portal.mjs / submit.mjs   Vercel adapters for the same functions
+supabase/
+  schema.sql                 Database schema — paste into the Supabase SQL editor
 marketing/
   AgOptics_WellRegistration_Postcard.pdf   EDDM postcard promoting the service
 forms/
@@ -59,6 +76,9 @@ CLI alternative: `npm i -g netlify-cli` then `cd app && netlify deploy --prod`.
 
 ## The grower workflow (in the app)
 
+0. **Sign in (recommended)** — enter an email, get a 6-digit code, done. From
+   here on everything below autosaves to their account so they can return to
+   add more wells or make changes any time, from any device.
 1. **Import** the dashboard "Explore Usage" export (.xlsx). The app auto-detects the
    APN / GSA / field-name columns, fills the landowner name, and lists every parcel
    color-coded by GSA (green = Greater Kaweah, blue = Mid-Kaweah).
@@ -81,6 +101,57 @@ diverting real grower submissions. If the function is unavailable, the app
 falls back to submitting to Netlify Forms (data lands under **Forms →
 well-registration** in the Netlify dashboard — check the **Spam** tab there,
 since Akismet flags most of these submissions).
+
+---
+
+## The grower portal (pilot study)
+
+How it works for a grower:
+
+1. Open the app, type their **email address**, tap **"Email me a code"**.
+2. Enter the **6-digit code** from the email — they're signed in (no password,
+   and the sign-in lasts ~90 days on that device).
+3. Everything saves automatically from then on: their name/contact/GSA, their
+   imported parcel list, and every well they add, edit, or delete. A small
+   **"Saved ✓"** pill in the account bar shows sync status.
+4. They can leave and come back later — on the same phone or a different
+   device — sign in with a fresh code, and all their parcels and wells load
+   right back onto the map for more marking or corrections.
+
+Where the data lives: the Supabase project → **Table Editor** →
+`growers`, `grower_parcels`, `grower_wells` (the live, editable set per
+account). The original `registrations` + `wells` tables still archive each
+"Email summary to AgOptics" submission, now linked to the grower's account
+via `registrations.grower_id` when they were signed in.
+
+### One-time setup (~5 min)
+
+1. **Database:** Supabase dashboard → SQL Editor → paste all of
+   `supabase/schema.sql` → Run. (Safe to re-run — it only adds what's new:
+   `growers`, `login_codes`, `grower_parcels`, `grower_wells`, and a
+   `grower_id` column on `registrations`.)
+2. **Env vars:** none new required — the portal reuses `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, and `RESEND_API_KEY`, which are already set
+   for the submit function.
+3. **Important — sign-in code delivery:** Resend's default sender
+   (`onboarding@resend.dev`) only delivers to the Resend account owner's own
+   inbox, which is fine for testing but means **growers won't receive codes**
+   until you verify a domain: Resend dashboard → Domains → add `agoptics.ai`
+   (or a subdomain) → add the DNS records it shows → then set the env var
+   `FROM_EMAIL` to something like
+   `AgOptics <register@agoptics.ai>` and redeploy. This also makes the
+   submission emails deliverable to any recipient.
+4. Optional: set `PORTAL_AUTH_SECRET` (any long random string) to sign grower
+   sessions. If unset, a secret is derived from the service role key —
+   fine for the pilot; the only effect is that rotating the service key
+   signs everyone out.
+
+Security model: the browser never talks to Supabase — Row Level Security
+stays fully locked with no policies, and all reads/writes go through the
+`portal` serverless function, which checks the grower's signed session token
+and only ever touches that grower's own rows. Sign-in codes are stored
+hashed, expire in 15 minutes, allow 5 attempts, and are rate-limited to 4
+per email per 10 minutes.
 
 ---
 
